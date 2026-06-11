@@ -43,6 +43,9 @@ dist/
 models/
 .webview/
 
+# Generated app icon (created by make_icon.py / on first launch)
+nova.ico
+
 # ============================================================
 #  Editors / OS cruft
 # ============================================================

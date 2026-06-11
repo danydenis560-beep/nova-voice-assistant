@@ -120,8 +120,19 @@ def _force_taskbar_icon():
         errlog("set icon failed: " + traceback.format_exc())
 
 
+def _ensure_icon():
+    """Generate nova.ico on first run if it's missing (it's a build artifact,
+    not committed to git). Harmless if Pillow isn't available."""
+    if not os.path.exists(ICON):
+        try:
+            import make_icon  # noqa: F401  (writes nova.ico as an import side effect)
+        except Exception:
+            errlog("icon generation skipped: " + traceback.format_exc())
+
+
 def main():
     errlog("launcher starting")
+    _ensure_icon()
     try:  # group the taskbar button under our own identity so it shows our icon
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Nova.Assistant")
@@ -144,8 +155,9 @@ def main():
     webview.create_window("Nova", URL, width=1040, height=720,
                           background_color="#04070d")
     threading.Thread(target=_force_taskbar_icon, daemon=True).start()
+    _icon = ICON if os.path.exists(ICON) else None
     try:
-        webview.start(icon=ICON, storage_path=str(BASE / ".webview"))
+        webview.start(icon=_icon, storage_path=str(BASE / ".webview"))
     except TypeError:
         webview.start()
     errlog("window closed; exiting")
