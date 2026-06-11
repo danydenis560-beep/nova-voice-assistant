@@ -1,0 +1,22 @@
+name: CI
+
+# A lightweight syntax check: byte-compiles every Python file on Windows with
+# Python 3.12. It does NOT install the heavy dependencies (torch, speechbrain,
+# etc.), so it stays fast and reliable — it just proves the code parses cleanly.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  syntax-check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Byte-compile all sources
+        run: python -m compileall -q .

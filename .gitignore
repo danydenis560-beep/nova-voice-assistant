@@ -1,0 +1,54 @@
+# ============================================================
+#  Secrets & personal data — NEVER commit these
+# ============================================================
+.env
+.env.*
+!.env.example
+
+# Cached auth tokens (e.g. outlook_token.json)
+*_token.json
+
+# Your enrolled voiceprint and any other numpy dumps
+voiceprint.npy
+*.npy
+
+# Local runtime state (memory, tasks, briefing, location)
+nova_*.json
+
+# Process id / lock files
+*.pid
+
+# ============================================================
+#  Logs
+# ============================================================
+*.log
+
+# ============================================================
+#  Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.Python
+build/
+dist/
+*.egg-info/
+
+# ============================================================
+#  Models & caches (large; downloaded automatically on first run)
+# ============================================================
+models/
+.webview/
+
+# ============================================================
+#  Editors / OS cruft
+# ============================================================
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store

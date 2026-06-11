@@ -1,0 +1,43 @@
+# ===== NOVA — your AI voice assistant — Python packages =====
+# The Guide shows you exactly how to install these. Short version, once Python
+# 3.12 is installed and a virtual environment is active:
+#
+#     pip install -r requirements.txt
+#
+# (torch + the speech models are the big downloads; give it a few minutes.)
+
+# --- Core (required) ---
+anthropic            # the AI brain (Claude)
+python-dotenv        # reads your .env settings
+fastapi              # the local web server
+uvicorn[standard]    # runs the server (+ websockets)
+pywebview            # Nova's desktop window (no browser needed)
+
+# --- Hearing you (speech-to-text, local & free) ---
+sounddevice          # microphone capture
+numpy                # audio math
+faster-whisper       # local speech recognition
+silero-vad           # detects when you're actually speaking
+
+# --- Nova's voice (text-to-speech) ---
+edge-tts             # free, natural neural voices (online)
+pyttsx3              # offline Windows fallback voice
+pywin32              # Windows speech + system integration
+
+# --- Recognizing YOUR voice (hands-free) ---
+torch                # machine-learning runtime (CPU build is fine)
+torchaudio
+speechbrain          # voice fingerprinting
+
+# --- Seeing & saving (screenshots, documents, PDFs) ---
+pillow               # screenshots & images
+PyMuPDF              # read & create PDFs
+
+# --- Optional integrations (calendar, email, store, chat) ---
+httpx                # web requests (weather, YouTube, Shopify, Telegram/Discord)
+icalendar            # Google Calendar (read-only)
+recurring-ical-events
+msal                 # Microsoft / Outlook sign-in
+
+# --- Optional extra: webcam vision (remove the # to enable) ---
+# opencv-python
