@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NOVA</title>
+<style>
+  :root{ --accent:70,210,255; --level:0; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:radial-gradient(circle at 50% 50%,#06121f,#02060c 80%);
+    color:rgb(var(--accent));
+    font-family:'Segoe UI',system-ui,sans-serif;
+    overflow:hidden;user-select:none;height:100%;
+    display:grid;grid-template-columns:300px 1fr 320px;grid-template-rows:auto 1fr;
+    gap:14px;padding:14px;transition:color .5s;
+  }
+  body[data-state="listening"]{--accent:90,255,160;}
+  body[data-state="thinking"]{--accent:255,200,90;}
+  body[data-state="speaking"]{--accent:90,180,255;}
+
+  .panel{border:1px solid rgba(var(--accent),.30);border-radius:12px;
+    background:linear-gradient(180deg,rgba(var(--accent),.06),rgba(var(--accent),.02));
+    box-shadow:inset 0 0 22px rgba(var(--accent),.08);padding:14px 16px;transition:border-color .5s;}
+  .ttl{font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:.8;
+    font-weight:700;margin-bottom:10px;text-shadow:0 0 10px rgba(var(--accent),.7);}
+  .accent{color:rgb(var(--accent));}
+
+  /* top bar */
+  .topbar{grid-column:1 / -1;display:flex;align-items:center;gap:14px;}
+  .cmdbar{flex:1;border:1px solid rgba(var(--accent),.35);border-radius:10px;
+    background:rgba(0,0,0,.35);padding:8px 14px;min-height:42px;display:flex;flex-direction:column;justify-content:center;
+    box-shadow:inset 0 0 16px rgba(var(--accent),.10);overflow:hidden;}
+  .cmdline{font-size:13px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;animation:fade .35s forwards;}
+  .cmdline .who{font-weight:700;opacity:.85;margin-right:6px;}
+  .cmdline.you{color:#cfe9ff;} .cmdline.nova{color:rgb(var(--accent));}
+  @keyframes fade{to{opacity:1;}}
+  .badge{font-size:12px;letter-spacing:2px;font-weight:700;color:rgb(var(--accent));
+    border:1px solid rgba(var(--accent),.4);border-radius:8px;padding:8px 12px;text-shadow:0 0 10px rgba(var(--accent),.7);}
+  .clock{font-size:13px;opacity:.85;text-align:right;min-width:120px;line-height:1.2;}
+  .clock b{font-size:18px;}
+
+  /* left column */
+  .left{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;}
+  .stat{margin-bottom:12px;}
+  .stat:last-child{margin-bottom:0;}
+  .stat .row{display:flex;justify-content:space-between;font-size:12px;opacity:.9;margin-bottom:5px;}
+  .bar{height:8px;border-radius:5px;background:rgba(var(--accent),.14);overflow:hidden;}
+  .bar>i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,rgba(var(--accent),.6),rgb(var(--accent)));
+    box-shadow:0 0 10px rgba(var(--accent),.7);transition:width .6s;}
+  #wave{width:100%;height:64px;display:block;}
+  .batt{display:flex;align-items:baseline;gap:10px;}
+  .batt .pct{font-size:34px;font-weight:800;text-shadow:0 0 16px rgba(var(--accent),.8);}
+  .batt .lbl{font-size:12px;opacity:.8;}
+  /* activity feed */
+  .actpanel{flex:1 0 auto;min-height:96px;display:flex;flex-direction:column;}
+  .actlist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:5px;font-size:13px;}
+  .actline{opacity:0;animation:fade .3s forwards;color:rgb(var(--accent));}
+  .actline .t{opacity:.45;margin-right:7px;font-size:11px;}
+  /* type-to-Nova bar */
+  #typebar{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:8px;align-items:center;
+    width:min(440px,68vw);background:rgba(3,9,16,.92);border:1px solid rgba(var(--accent),.45);border-radius:24px;
+    padding:6px 8px 6px 16px;box-shadow:0 0 24px rgba(var(--accent),.25);}
+  #typeIn{flex:1;background:transparent;border:none;outline:none;color:#cfe9ff;font-size:14px;font-family:inherit;}
+  #typeIn::placeholder{color:rgba(207,233,255,.45);}
+  #typeSend{width:34px;height:34px;border-radius:50%;border:1px solid rgba(var(--accent),.5);background:rgba(var(--accent),.18);
+    color:rgb(var(--accent));font-size:15px;cursor:pointer;flex:none;}
+  #typeSend:hover{background:rgba(var(--accent),.32);}
+
+  /* center column */
+  .center{grid-column:2;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;min-height:0;}
+  .cbtns{display:flex;gap:14px;}
+  .cbtn{font-size:13px;letter-spacing:2px;font-weight:700;color:rgb(var(--accent));cursor:pointer;
+    border:1px solid rgba(var(--accent),.45);border-radius:8px;padding:10px 22px;background:rgba(var(--accent),.06);
+    text-transform:uppercase;transition:all .25s;text-shadow:0 0 8px rgba(var(--accent),.6);}
+  .cbtn:hover{background:rgba(var(--accent),.18);}
+  .cbtn.on{background:rgba(var(--accent),.28);box-shadow:0 0 18px rgba(var(--accent),.5);}
+
+  .orbwrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;width:100%;}
+  .orb{position:relative;width:min(46vh,360px);height:min(46vh,360px);cursor:pointer;}
+  .orb .ring,.orb .arc{position:absolute;border-radius:50%;inset:0;}
+  .orb .ring{border:1px solid rgba(var(--accent),.18);}
+  .orb .ring.r2{inset:9%;border-color:rgba(var(--accent),.12);}
+  .orb .ring.r3{inset:30%;border:1px solid rgba(var(--accent),.5);box-shadow:0 0 16px rgba(var(--accent),.4),inset 0 0 16px rgba(var(--accent),.3);}
+  .orb .arc{border:2px solid transparent;}
+  .orb .arc.a1{border-top-color:rgb(var(--accent));border-right-color:rgba(var(--accent),.4);animation:spin 6s linear infinite;}
+  .orb .arc.a2{inset:14%;border-bottom-color:rgb(var(--accent));border-left-color:rgba(var(--accent),.3);animation:spin 9s linear infinite reverse;}
+  .orb .arc.a3{inset:22%;border-top-color:rgba(var(--accent),.7);animation:spin 4.5s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .orb .core{position:absolute;inset:38%;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 45%,rgba(var(--accent),.30),rgba(2,8,14,.9) 70%);
+    border:1px solid rgba(var(--accent),.5);
+    box-shadow:0 0 calc(18px + var(--level)*70px) rgba(var(--accent),.75),inset 0 0 20px rgba(var(--accent),.4);
+    transform:scale(calc(1 + var(--level)*.12));transition:transform .12s;}
+  .orb .core span{font-size:13px;letter-spacing:2px;font-weight:700;color:rgb(var(--accent));
+    text-shadow:0 0 12px rgba(var(--accent),.9);}
+  .iconrow{display:flex;gap:14px;}
+  .icon{width:46px;height:46px;border-radius:10px;border:1px solid rgba(var(--accent),.4);
+    background:rgba(var(--accent),.06);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;
+    color:rgb(var(--accent));transition:all .2s;}
+  .icon:hover{background:rgba(var(--accent),.2);box-shadow:0 0 14px rgba(var(--accent),.4);}
+  .status{font-size:13px;letter-spacing:3px;text-transform:uppercase;font-weight:700;opacity:.9;
+    text-shadow:0 0 12px rgba(var(--accent),.8);min-height:16px;}
+
+  /* right column */
+  .right{grid-column:3;grid-row:2;display:flex;flex-direction:column;gap:14px;min-height:0;}
+  .wx .line{display:flex;align-items:center;gap:9px;font-size:13px;margin-bottom:9px;}
+  .wx .line:last-child{margin-bottom:0;}
+  .wx .ic{font-size:17px;width:22px;text-align:center;}
+  .wx .big{font-size:26px;font-weight:800;text-shadow:0 0 14px rgba(var(--accent),.7);}
+  .viz{flex:1;display:flex;gap:14px;min-height:0;}
+  .viz .panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;}
+  .viz canvas{display:block;}
+  .viz .cap{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin-top:6px;}
+
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,12,.88);display:none;align-items:center;justify-content:center;z-index:20;}
+  .overlay.show{display:flex;}
+  .card{max-width:560px;width:86%;text-align:center;padding:30px;border:1px solid rgba(var(--accent),.45);
+    border-radius:16px;background:rgba(var(--accent),.06);box-shadow:0 0 50px rgba(var(--accent),.3);}
+  .card h2{font-size:20px;margin-bottom:10px;letter-spacing:1px;}
+  .card .big{font-size:54px;font-weight:800;margin:6px 0;text-shadow:0 0 20px rgba(var(--accent),.85);}
+  .card p{font-size:14px;opacity:.85;line-height:1.5;}
+  .cmdtxt{font-family:Consolas,monospace;font-size:14px;background:rgba(0,0,0,.4);border:1px solid rgba(var(--accent),.3);
+    padding:14px;border-radius:10px;margin:14px 0;word-break:break-all;color:#cfe9ff;text-align:left;}
+  .obtns{display:flex;gap:14px;justify-content:center;margin-top:8px;}
+  .obtn{padding:10px 30px;border-radius:8px;font-size:15px;font-weight:700;border:1px solid;cursor:pointer;}
+  .obtn.allow{color:#9cffc4;border-color:rgba(120,255,170,.6);background:rgba(120,255,170,.16);}
+  .obtn.deny{color:#ff9c9c;border-color:rgba(255,140,140,.5);background:rgba(255,140,140,.12);}
+  .cmds{text-align:left;font-size:14px;line-height:1.8;columns:2;}
+  .cmds li{margin-left:18px;}
+  .close{margin-top:16px;display:inline-block;font-size:13px;opacity:.7;cursor:pointer;border:1px solid rgba(var(--accent),.4);padding:8px 20px;border-radius:8px;}
+
+  /* details (dashboard) panel — slides from right */
+  #details{position:fixed;top:0;right:0;height:100%;width:min(420px,86vw);z-index:18;
+    background:rgba(3,9,16,.97);border-left:1px solid rgba(var(--accent),.4);box-shadow:-10px 0 40px rgba(0,0,0,.6);
+    transform:translateX(100%);transition:transform .3s;padding:18px;overflow:auto;}
+  #details.show{transform:translateX(0);}
+  #details .dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  #details .dh .x{cursor:pointer;font-size:18px;border:1px solid rgba(var(--accent),.4);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;}
+  .dcard{border:1px solid rgba(var(--accent),.28);border-radius:10px;padding:12px 14px;margin-bottom:12px;background:rgba(var(--accent),.05);}
+  .dcard .h{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin-bottom:8px;}
+  .muted{opacity:.55;font-size:13px;}
+  .task{display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:6px;}
+  .task .ck{cursor:pointer;width:18px;height:18px;border:1.5px solid rgba(var(--accent),.7);border-radius:50%;flex:none;}
+  .task .ck:hover{background:rgba(var(--accent),.25);}
+  .task .tx{flex:1;} .task .dl{cursor:pointer;opacity:.4;} .task .dl:hover{opacity:1;color:#ff9c9c;}
+  .due{font-size:11px;opacity:.7;background:rgba(var(--accent),.14);padding:1px 7px;border-radius:7px;}
+  .addrow{display:flex;gap:7px;margin-top:8px;}
+  .addrow input{flex:1;background:rgba(0,0,0,.35);border:1px solid rgba(var(--accent),.3);color:#cfe9ff;border-radius:8px;padding:8px 11px;font-size:13px;outline:none;font-family:inherit;}
+  .addrow button{background:rgba(var(--accent),.18);border:1px solid rgba(var(--accent),.5);color:rgb(var(--accent));border-radius:8px;width:38px;font-size:20px;cursor:pointer;}
+  .big2{font-size:30px;font-weight:800;text-shadow:0 0 14px rgba(var(--accent),.7);}
+  .evt{margin-bottom:8px;} .evt .w{font-size:11px;opacity:.6;text-transform:uppercase;} .evt .t{font-size:14px;}
+  .train{font-size:12px;opacity:.75;cursor:pointer;border:1px solid rgba(var(--accent),.4);padding:8px;border-radius:8px;text-align:center;margin-top:6px;}
+  .train.done{color:#9cffc4;border-color:rgba(120,255,170,.6);}
+</style>
+</head>
+<body data-state="idle">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="cmdbar" id="cmdbar"><div class="cmdline nova"><span class="who">NOVA</span>Online. Tap the core or press Start Listening.</div></div>
+    <div class="clock"><b id="clk">--:--</b><br/><span id="clkd"></span></div>
+    <div class="badge">N.O.V.A&nbsp; V2.0</div>
+  </div>
+
+  <!-- LEFT: SYSTEM STATUS -->
+  <div class="left">
+    <div class="panel">
+      <div class="ttl">System Status</div>
+      <div class="stat">
+        <div class="row"><span>RAM Usage</span><span id="ramTxt">— %</span></div>
+        <div class="bar"><i id="ramBar" style="width:0%"></i></div>
+      </div>
+      <div class="stat">
+        <div class="row"><span>Internet</span><span id="netTxt" class="accent">…</span></div>
+        <div class="bar"><i id="netBar" style="width:0%"></i></div>
+      </div>
+      <div class="stat">
+        <div class="row"><span>Ping</span><span id="pingTxt">— ms</span></div>
+        <div class="bar"><i id="pingBar" style="width:0%"></i></div>
+      </div>
+    </div>
+    <div class="panel"><div class="ttl">Voice Activity</div><canvas id="wave" width="260" height="64"></canvas></div>
+    <div class="panel">
+      <div class="ttl">Battery</div>
+      <div class="batt"><span class="pct" id="battPct">—</span><span class="lbl" id="battLbl"></span></div>
+      <div class="bar" style="margin-top:8px;height:12px;"><i id="battBar" style="width:0%"></i></div>
+    </div>
+    <div class="panel actpanel">
+      <div class="ttl">Activity</div>
+      <div id="activity" class="actlist"><div class="actline" data-ph style="opacity:.5">Idle — waiting for you</div></div>
+    </div>
+  </div>
+
+  <!-- CENTER: ORB -->
+  <div class="center">
+    <div class="cbtns">
+      <div class="cbtn" id="allCmds">All Commands</div>
+      <div class="cbtn" id="listenBtn">Start Listening</div>
+    </div>
+    <div class="orbwrap">
+      <div class="orb" id="orb">
+        <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+        <div class="arc a1"></div><div class="arc a2"></div><div class="arc a3"></div>
+        <div class="core"><span>N.O.V.A</span></div>
+      </div>
+    </div>
+    <div class="status" id="status">CONNECTING</div>
+    <div class="iconrow">
+      <div class="icon" id="icDash" title="Dashboard">▤</div>
+      <div class="icon" id="icTasks" title="Tasks">✓</div>
+      <div class="icon" id="icMic" title="Tap to speak">🎤</div>
+      <div class="icon" id="icWx" title="Refresh">⟳</div>
+      <div class="icon" id="icPower" title="Stop listening">⏻</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: WEATHER + VISUALS -->
+  <div class="right">
+    <div class="panel wx">
+      <div class="ttl">Weather</div>
+      <div class="line"><span class="ic">🌡️</span><span class="big" id="wxTemp">—</span><span id="wxCond"></span></div>
+      <div class="line"><span class="ic">💧</span><span>Humidity: <span id="wxHum">—</span></span></div>
+      <div class="line"><span class="ic">🌬️</span><span>Wind: <span id="wxWind">—</span></span></div>
+      <div class="line"><span class="ic">📍</span><span id="wxCity">—</span></div>
+    </div>
+    <div class="viz">
+      <div class="panel"><canvas id="globe" width="120" height="120"></canvas><div class="cap">Earth</div></div>
+      <div class="panel"><canvas id="radar" width="120" height="120"></canvas><div class="cap">Voice Radar</div></div>
+    </div>
+  </div>
+
+  <div id="typebar"><input id="typeIn" placeholder="Type to Nova…" maxlength="500" autocomplete="off"/><button id="typeSend" title="Send">➤</button></div>
+
+  <!-- OVERLAYS -->
+  <div class="overlay" id="enrollOv"><div class="card">
+    <h2 id="enTitle">Learning your voice</h2><div class="big" id="enBig"></div>
+    <p id="enText">Keep talking normally until the countdown ends.</p>
+  </div></div>
+
+  <div class="overlay" id="confirmOv"><div class="card">
+    <h2>Run this command?</h2><p class="cmdtxt" id="cmdTxt"></p>
+    <div class="obtns"><div class="obtn deny" id="denyBtn">Deny</div><div class="obtn allow" id="allowBtn">Allow</div></div>
+  </div></div>
+
+  <div class="overlay" id="cmdsOv"><div class="card">
+    <h2>What you can say</h2>
+    <ul class="cmds">
+      <li>"What's on my screen?"</li><li>"Read this PDF"</li>
+      <li>"Open Chrome / Spotify"</li><li>"What's the weather?"</li>
+      <li>"Add buy milk to my tasks"</li><li>"What's on my calendar?"</li>
+      <li>"How many subscribers?"</li><li>"What were my sales today?"</li>
+      <li>"Give me my briefing"</li><li>"Search the web for…"</li>
+      <li>"Remember that I…"</li><li>"Show my dashboard"</li>
+    </ul>
+    <div class="close" id="cmdsClose">Close</div>
+  </div></div>
+
+  <!-- DETAILS / DASHBOARD PANEL -->
+  <div id="details">
+    <div class="dh"><div class="ttl" style="margin:0;">Dashboard</div><div class="x" id="detClose">✕</div></div>
+    <div class="dcard"><div class="h">Briefing</div><div id="dBrief" class="muted">…</div></div>
+    <div class="dcard"><div class="h">Tasks <span id="dTaskN"></span></div>
+      <div id="dTasks"></div>
+      <div class="addrow"><input id="dTaskIn" placeholder="Add a task…" maxlength="120"/><button id="dTaskAdd">+</button></div>
+    </div>
+    <div class="dcard"><div class="h">Calendar</div><div id="dCal" class="muted">…</div></div>
+    <div class="dcard"><div class="h">YouTube</div><div id="dYt" class="muted">…</div></div>
+    <div class="dcard"><div class="h">Shopify — Today</div><div id="dShop" class="muted">…</div></div>
+    <div class="train" id="trainBtn">🎙 Train my voice</div>
+  </div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const body = document.body;
+  let always=false, enrolled=false, ws=null, confirmId=null;
+  let targetLevel=0, curLevel=0;
+  const STATUS={idle:'TAP TO SPEAK',listening:'LISTENING',thinking:'THINKING',speaking:'SPEAKING',enroll:'LEARNING VOICE'};
+
+  function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function setState(s){ body.dataset.state=(s==='enroll'?'listening':s); $('status').textContent=STATUS[s]||s.toUpperCase(); }
+  function cmdLine(who,text){
+    const b=$('cmdbar'); const d=document.createElement('div');
+    d.className='cmdline '+(who==='you'?'you':'nova');
+    d.innerHTML='<span class="who">'+(who==='you'?'YOU':'NOVA')+'</span>'+esc(text);
+    b.appendChild(d); while(b.childNodes.length>2) b.removeChild(b.firstChild);
+  }
+  function setListen(on){ always=on; const btn=$('listenBtn');
+    btn.classList.toggle('on',on); btn.textContent=on?'Stop Listening':'Start Listening'; }
+
+  // ---- websocket ----
+  function connect(){
+    ws=new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws');
+    ws.onopen=()=>setState('idle');
+    ws.onclose=()=>{ $('status').textContent='RECONNECTING'; setTimeout(connect,1200); };
+    ws.onmessage=(e)=>{ const m=JSON.parse(e.data);
+      if(m.type==='level') targetLevel=m.v;
+      else if(m.type==='state') setState(m.state);
+      else if(m.type==='you') cmdLine('you',m.text);
+      else if(m.type==='nova') cmdLine('nova',m.text);
+      else if(m.type==='mode') setListen(m.always);
+      else if(m.type==='voiceid'){ enrolled=m.enrolled; const t=$('trainBtn'); t.classList.toggle('done',enrolled); t.textContent=enrolled?'🎙 Voice: ✓ trained':'🎙 Train my voice'; }
+      else if(m.type==='enroll'){ const o=$('enrollOv');
+        if(m.phase==='record'){ o.classList.add('show'); $('enBig').textContent=m.secs+'s'; $('enText').textContent='Keep talking normally until the countdown ends.'; }
+        else if(m.phase==='learning'){ $('enBig').textContent='…'; $('enText').textContent='Got it — building your voiceprint.'; }
+        else if(m.phase==='failed'){ o.classList.remove('show'); } }
+      else if(m.type==='enrolled'){ enrolled=true; $('enrollOv').classList.remove('show'); }
+      else if(m.type==='confirm'){ confirmId=m.id; $('cmdTxt').textContent=m.command; $('confirmOv').classList.add('show'); }
+      else if(m.type==='view'){ if(m.view==='dashboard') openDetails(); else closeDetails(); }
+      else if(m.type==='activity'){ addActivity(m.tool); }
+      else if(m.type==='error'){ cmdLine('nova',m.text); }
+    };
+  }
+  connect();
+  function send(o){ if(ws&&ws.readyState===1) ws.send(JSON.stringify(o)); }
+
+  // ---- buttons / icons ----
+  $('orb').addEventListener('click',()=>send({cmd:'talk'}));
+  $('icMic').addEventListener('click',()=>send({cmd:'talk'}));
+  $('listenBtn').addEventListener('click',()=>send({cmd:'mode',always:!always}));
+  $('icPower').addEventListener('click',()=>send({cmd:'mode',always:false}));
+  $('allCmds').addEventListener('click',()=>$('cmdsOv').classList.add('show'));
+  $('cmdsClose').addEventListener('click',()=>$('cmdsOv').classList.remove('show'));
+  $('allowBtn').addEventListener('click',()=>{ $('confirmOv').classList.remove('show'); send({cmd:'confirm',id:confirmId,allow:true}); });
+  $('denyBtn').addEventListener('click',()=>{ $('confirmOv').classList.remove('show'); send({cmd:'confirm',id:confirmId,allow:false}); });
+  $('trainBtn').addEventListener('click',()=>send({cmd:'enroll'}));
+  $('icDash').addEventListener('click',toggleDetails);
+  $('icTasks').addEventListener('click',openDetails);
+  $('icWx').addEventListener('click',()=>{ fetchSystem(); fetchDash(); });
+
+  // ---- type to Nova (text instead of voice; he still replies out loud) ----
+  const typeIn=$('typeIn');
+  function sendText(){ const v=typeIn.value.trim(); if(!v) return; typeIn.value=''; send({cmd:'text',text:v}); }
+  $('typeSend').addEventListener('click',sendText);
+  typeIn.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendText(); } });
+
+  // ---- activity feed (which tool Nova is using) ----
+  const TOOLLBL={save_file:'📄 Saving a file',read_document:'📑 Reading a document',see_screen:'👁️ Looking at your screen',look_camera:'📷 Using the camera',open_application:'🖥️ Opening an app',open_path:'📂 Opening a file/link',run_powershell:'⚙️ Running a command',show_dashboard:'📊 Opening the dashboard',web_search:'🔍 Searching the web',remember:'🧠 Saving to memory',update_memory:'🧠 Updating memory',forget_memory:'🧠 Forgetting',add_task:'✅ Adding a task',list_tasks:'✅ Checking tasks',complete_task:'✅ Completing a task',delete_task:'✅ Removing a task',check_calendar:'📅 Checking calendar',youtube_stats:'▶️ Checking YouTube',daily_briefing:'🌅 Preparing briefing',set_briefing_schedule:'🌅 Scheduling briefing',check_email:'📧 Checking email',send_email:'📧 Sending email',send_telegram:'💬 Posting to Telegram',send_discord:'💬 Posting to Discord',list_discord_channels:'💬 Listing channels',shopify_shop_info:'🛍️ Shopify info',shopify_recent_orders:'🛍️ Checking orders',shopify_search_products:'🛍️ Searching products',shopify_graphql:'🛍️ Shopify query'};
+  function addActivity(tool){ const a=$('activity'); if(!a) return; const ph=a.querySelector('[data-ph]'); if(ph) ph.remove();
+    const d=document.createElement('div'); d.className='actline'; const n=new Date();
+    const ts=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+    d.innerHTML='<span class="t">'+ts+'</span>'+(TOOLLBL[tool]||('🔧 '+esc(tool)));
+    a.appendChild(d); while(a.childNodes.length>8) a.removeChild(a.firstChild); a.scrollTop=a.scrollHeight; }
+
+  // ---- live clock ----
+  function tickClock(){ const n=new Date(); let h=n.getHours(); const ap=h<12?'AM':'PM'; h=h%12||12;
+    $('clk').textContent=h+':'+String(n.getMinutes()).padStart(2,'0')+' '+ap;
+    $('clkd').textContent=n.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}); }
+  setInterval(tickClock,1000); tickClock();
+
+  // ---- system stats ----
+  function fetchSystem(){ fetch('/api/system').then(r=>r.json()).then(d=>{
+    if(d.ram!=null){ $('ramTxt').textContent=d.ram+'% used'+(d.ram_total_gb?' of '+d.ram_total_gb+'GB':''); $('ramBar').style.width=d.ram+'%'; }
+    $('netTxt').textContent=d.online?'Connected':'Offline'; $('netBar').style.width=d.online?'100%':'8%';
+    if(d.ping_ms!=null){ $('pingTxt').textContent=d.ping_ms+' ms'; $('pingBar').style.width=Math.max(6,100-Math.min(100,d.ping_ms/2))+'%'; }
+    else { $('pingTxt').textContent='—'; }
+    if(d.battery!=null){ $('battPct').textContent=d.battery+'%'; $('battBar').style.width=d.battery+'%';
+      $('battLbl').textContent=d.charging?'Charging':(d.battery>=100?'Full':'On battery'); }
+    else { $('battPct').textContent='AC'; $('battBar').style.width='100%'; $('battLbl').textContent='Plugged in'; }
+  }).catch(()=>{}); }
+  fetchSystem(); setInterval(fetchSystem,3000);
+
+  // ---- dashboard data (weather card + details panel) ----
+  function fetchDash(){ fetch('/api/dashboard').then(r=>r.json()).then(renderDash).catch(()=>{}); }
+  function renderDash(d){
+    const w=d.weather||{};
+    if(w.status==='ok'){ $('wxTemp').textContent=w.temp+'°'+(w.unit||''); $('wxCond').textContent=esc(w.text||'');
+      $('wxHum').textContent=(w.humidity!=null?w.humidity+'%':'—'); $('wxWind').textContent=(w.wind!=null?w.wind+' '+w.wind_unit:'—'); $('wxCity').textContent=esc(w.city||''); }
+    else { $('wxTemp').textContent='—'; $('wxCond').textContent='unavailable'; }
+    $('dBrief').textContent=d.briefing||'';
+    const t=d.tasks||[]; $('dTaskN').textContent=t.length?('· '+t.length):'';
+    $('dTasks').innerHTML = t.length ? t.map(x=>'<div class="task"><span class="ck" data-act="complete" data-id="'+x.id+'"></span><span class="tx">'+esc(x.text)+'</span>'+(x.due?'<span class="due">'+esc(x.due)+'</span>':'')+'<span class="dl" data-act="delete" data-id="'+x.id+'">✕</span></div>').join('') : '<div class="muted">Nothing on your list.</div>';
+    const c=d.calendar||{};
+    $('dCal').innerHTML = c.status==='connected' ? ((c.events&&c.events.length)? c.events.map(e=>'<div class="evt"><div class="w">'+esc(e.when)+'</div><div class="t">'+esc(e.title)+'</div></div>').join('') : '<div class="muted">Nothing coming up.</div>') : '<div class="muted">Not connected.</div>';
+    const y=d.youtube||{};
+    if(y.status==='connected'){ const s=y.subscribers_hidden?'hidden':(y.subscribers!=null?Number(y.subscribers).toLocaleString():'—');
+      $('dYt').innerHTML='<div class="big2">'+s+'</div><div class="muted">subscribers · '+(y.views!=null?Number(y.views).toLocaleString()+' views':'')+'</div>'; }
+    else { $('dYt').innerHTML='<div class="muted">Not connected.</div>'; }
+    const sh=d.shopify||{};
+    if(sh.status==='connected'){ $('dShop').innerHTML='<div class="big2">'+(sh.currency?esc(sh.currency)+' ':'')+sh.sales_today+'</div><div class="muted">'+sh.orders_today+' orders today · '+esc(sh.shop||'')+'</div>'; }
+    else { $('dShop').innerHTML='<div class="muted">Not connected.</div>'; }
+  }
+  fetchDash(); setInterval(fetchDash,30000);
+
+  // details panel
+  function openDetails(){ $('details').classList.add('show'); fetchDash(); }
+  function closeDetails(){ $('details').classList.remove('show'); }
+  function toggleDetails(){ $('details').classList.contains('show')?closeDetails():openDetails(); }
+  $('detClose').addEventListener('click',closeDetails);
+  $('dTasks').addEventListener('click',(e)=>{ const el=e.target.closest('[data-act]'); if(!el)return; taskAct(el.dataset.act,el.dataset.id); });
+  function taskAct(a,id){ fetch('/api/tasks/'+a,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:id})}).then(r=>r.json()).then(renderDash); }
+  function addTask(){ const v=$('dTaskIn').value.trim(); if(!v)return; $('dTaskIn').value='';
+    fetch('/api/tasks/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:v})}).then(r=>r.json()).then(renderDash); }
+  $('dTaskAdd').addEventListener('click',addTask);
+  $('dTaskIn').addEventListener('keydown',(e)=>{ if(e.key==='Enter') addTask(); });
+
+  // ---- orb pulse + canvases ----
+  const waveBuf=new Array(120).fill(0);
+  function rgbAccent(){ return getComputedStyle(body).getPropertyValue('--accent').trim(); }
+  function frame(){
+    curLevel+=(targetLevel-curLevel)*0.2; targetLevel*=0.93;
+    document.documentElement.style.setProperty('--level',curLevel.toFixed(3));
+    waveBuf.push(curLevel); waveBuf.shift();
+    drawWave(); drawRadar(); requestAnimationFrame(frame);
+  }
+  function drawWave(){ const c=$('wave'),x=c.getContext('2d'),W=c.width,H=c.height,a=rgbAccent();
+    x.clearRect(0,0,W,H); x.strokeStyle='rgba('+a+',0.9)'; x.lineWidth=2; x.shadowBlur=8; x.shadowColor='rgba('+a+',0.8)';
+    x.beginPath(); for(let i=0;i<waveBuf.length;i++){ const px=i/(waveBuf.length-1)*W, py=H/2-(waveBuf[i]*0.9+ (Math.sin(i*0.5)*0.04))*(H*0.45); i?x.lineTo(px,py):x.moveTo(px,py);} x.stroke(); x.shadowBlur=0; }
+  let radarAng=0;
+  const blips=Array.from({length:6},()=>({a:Math.random()*6.28,r:0.3+Math.random()*0.6}));
+  function drawRadar(){ const c=$('radar'),x=c.getContext('2d'),W=c.width,R=W/2,a=rgbAccent();
+    x.clearRect(0,0,W,W);
+    x.strokeStyle='rgba('+a+',0.25)'; for(let k=1;k<=3;k++){ x.beginPath(); x.arc(R,R,R*k/3-3,0,6.2832); x.stroke(); }
+    radarAng=(radarAng+0.04)%6.2832;
+    const g=x.createLinearGradient(R,R,R+Math.cos(radarAng)*R,R+Math.sin(radarAng)*R);
+    g.addColorStop(0,'rgba('+a+',0.6)'); g.addColorStop(1,'rgba('+a+',0)');
+    x.strokeStyle=g; x.lineWidth=2; x.beginPath(); x.moveTo(R,R); x.lineTo(R+Math.cos(radarAng)*(R-3),R+Math.sin(radarAng)*(R-3)); x.stroke();
+    for(const b of blips){ const bx=R+Math.cos(b.a)*(R-3)*b.r, by=R+Math.sin(b.a)*(R-3)*b.r;
+      let d=Math.abs(((b.a-radarAng+6.2832)%6.2832)); const al=Math.max(0.15,1-d*0.5)*(0.5+curLevel);
+      x.fillStyle='rgba('+a+','+al.toFixed(2)+')'; x.beginPath(); x.arc(bx,by,2.5,0,6.2832); x.fill(); }
+  }
+  // rotating globe (dotted sphere)
+  let globeAng=0; const pts=[];
+  for(let la=-80;la<=80;la+=20) for(let lo=0;lo<360;lo+=20){ const lar=la*Math.PI/180,lor=lo*Math.PI/180; pts.push([Math.cos(lar)*Math.cos(lor),Math.sin(lar),Math.cos(lar)*Math.sin(lor)]); }
+  function drawGlobe(){ const c=$('globe'),x=c.getContext('2d'),W=c.width,R=W/2-6,a=rgbAccent();
+    x.clearRect(0,0,W,W); globeAng+=0.01;
+    x.strokeStyle='rgba('+a+',0.3)'; x.beginPath(); x.arc(W/2,W/2,R,0,6.2832); x.stroke();
+    for(const p of pts){ const cosA=Math.cos(globeAng),sinA=Math.sin(globeAng); const xr=p[0]*cosA-p[2]*sinA, zr=p[0]*sinA+p[2]*cosA;
+      if(zr<0) continue; const sx=W/2+xr*R, sy=W/2+p[1]*R; const al=0.3+zr*0.6;
+      x.fillStyle='rgba('+a+','+al.toFixed(2)+')'; x.fillRect(sx-1,sy-1,2,2); }
+    requestAnimationFrame(drawGlobe);
+  }
+  requestAnimationFrame(frame); requestAnimationFrame(drawGlobe);
+</script>
+</body>
+</html>

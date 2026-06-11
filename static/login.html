@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#04070d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>N.O.V.A</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: radial-gradient(1200px 800px at 50% -10%, #0a1626 0%, #04070d 60%) fixed;
+    color: #cfeaff; display: flex; align-items: center; justify-content: center;
+    min-height: 100svh; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 360px; text-align: center;
+    background: rgba(8, 18, 30, 0.72);
+    border: 1px solid rgba(64, 196, 255, 0.22);
+    border-radius: 18px; padding: 38px 28px 30px;
+    box-shadow: 0 0 60px rgba(20, 120, 200, 0.18), inset 0 0 30px rgba(20, 90, 160, 0.08);
+    backdrop-filter: blur(6px);
+  }
+  .orb {
+    width: 92px; height: 92px; margin: 0 auto 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 40px; color: #eafaff;
+    letter-spacing: 1px;
+    background: radial-gradient(circle at 50% 38%, #58d6ff 0%, #1b86c8 45%, #0a3a5c 100%);
+    box-shadow: 0 0 40px rgba(70, 200, 255, 0.55), inset 0 0 18px rgba(255, 255, 255, 0.35);
+    animation: pulse 3.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 32px rgba(70, 200, 255, 0.45), inset 0 0 18px rgba(255, 255, 255, 0.30); }
+    50%      { box-shadow: 0 0 52px rgba(70, 200, 255, 0.75), inset 0 0 22px rgba(255, 255, 255, 0.45); }
+  }
+  h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: 4px; font-weight: 700; color: #eafaff; }
+  .sub { margin: 0 0 26px; font-size: 12.5px; letter-spacing: 1px; color: #6f93ad; }
+  input {
+    width: 100%; padding: 14px 16px; font-size: 16px; color: #eafaff;
+    background: rgba(2, 10, 18, 0.85); border: 1px solid rgba(70, 170, 230, 0.35);
+    border-radius: 12px; outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus { border-color: #4cc4ff; box-shadow: 0 0 0 3px rgba(76, 196, 255, 0.18); }
+  button {
+    width: 100%; margin-top: 14px; padding: 14px; font-size: 15px; font-weight: 700;
+    letter-spacing: 1.5px; color: #04111c; cursor: pointer; border: none; border-radius: 12px;
+    background: linear-gradient(180deg, #6fdcff, #2aa4e0);
+    box-shadow: 0 6px 18px rgba(40, 160, 220, 0.35);
+    transition: transform .08s, filter .2s;
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled { filter: saturate(0.4) brightness(0.8); cursor: default; }
+  .err {
+    margin-top: 16px; font-size: 13px; color: #ff8a8a; min-height: 18px;
+    opacity: 0; transition: opacity .2s;
+  }
+  .err.show { opacity: 1; }
+  .foot { margin-top: 22px; font-size: 11px; color: #4f6e84; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+  <form class="card" onsubmit="return go(event)">
+    <div class="orb">N</div>
+    <h1>N.O.V.A</h1>
+    <div class="sub">Enter your access password</div>
+    <input id="pw" type="password" inputmode="text" autocomplete="current-password"
+           placeholder="Password" autofocus>
+    <button id="btn" type="submit">UNLOCK</button>
+    <div id="err" class="err"></div>
+    <div class="foot">Secure remote control</div>
+  </form>
+<script>
+  var btn = document.getElementById('btn'), err = document.getElementById('err');
+  function fail(msg){ err.textContent = msg || 'Wrong password — try again.'; err.classList.add('show');
+    btn.disabled = false; btn.textContent = 'UNLOCK'; }
+  async function go(e){
+    e.preventDefault();
+    var pw = document.getElementById('pw').value;
+    if(!pw){ fail('Please enter your password.'); return false; }
+    err.classList.remove('show'); btn.disabled = true; btn.textContent = '...';
+    try{
+      var r = await fetch('/login', { method:'POST',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify({password: pw}) });
+      if(r.ok){ location.href = '/'; return false; }
+      var msg = '';
+      try{ var j = await r.json(); if(j && j.error) msg = j.error; }catch(_){}
+      fail(msg);
+    }catch(_){ fail('Connection problem — try again.'); }
+    return false;
+  }
+</script>
+</body>
+</html>
