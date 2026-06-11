@@ -5,6 +5,8 @@
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6.svg)](#-quick-start)
 [![Powered by Claude](https://img.shields.io/badge/AI-Claude-d97757.svg)](https://www.anthropic.com)
 
+**Created by [Dany Denis](https://github.com/danydenis560-beep) · founder of [DLC Market](https://dlcmarket.com)**
+
 Nova is a hands-free **AI voice assistant for Windows**. You talk to it; it listens
 (local speech-to-text), thinks with **Claude**, controls your PC, sees your screen,
 runs your day, and can even be controlled from your phone — all shown in a glowing
@@ -160,3 +162,9 @@ Built on [Anthropic Claude](https://www.anthropic.com), OpenAI Whisper (via
 [SpeechBrain](https://speechbrain.github.io),
 [edge-tts](https://github.com/rany2/edge-tts), and
 [pywebview](https://pywebview.flowrl.com).
+
+## 👤 Author
+
+Created by **[Dany Denis](https://github.com/danydenis560-beep)** — founder of **[DLC Market](https://dlcmarket.com)**,
+building open-source AI, automation, and developer tools. If Nova is useful to you, a ⭐ on the
+repo means a lot!
