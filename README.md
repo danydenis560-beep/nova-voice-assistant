@@ -90,6 +90,9 @@ A local **FastAPI** server (`server.py`) drives the WebSocket **HUD** (`static/i
 shown in a native **WebView2** window (`launch_nova.pyw`). In hands-free mode, **SpeechBrain**
 speaker verification means Nova replies only to your enrolled voice.
 
+> 🏗️ Want the full picture? **[ARCHITECTURE.md](ARCHITECTURE.md)** maps every module, the data
+> flow, the concurrency model, and the security design.
+
 ## 📱 Phone access
 
 Set `NOVA_ACCESS_PASSWORD` in `.env` and Nova becomes reachable from your phone — **your PC
@@ -116,6 +119,8 @@ access is **off by default** and always password-gated. See [Security](#-privacy
 | `nova.py` | A simple console (push-to-talk) version + the mic picker |
 | `config.py` · `.env.example` | All settings (read from your `.env`) |
 | `static/` | The HUD (`index.html`) and phone login page (`login.html`) |
+
+For how it all fits together, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ## 🔒 Privacy & security
 
@@ -147,7 +152,8 @@ Found a security issue? See [SECURITY.md](SECURITY.md).
 
 ## 🤝 Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Curious where Nova's
+headed? Check the **[Roadmap](ROADMAP.md)**.
 
 ## 📄 License
 
