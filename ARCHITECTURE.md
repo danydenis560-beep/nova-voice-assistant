@@ -12,22 +12,21 @@ over a WebSocket and speaks replies with a neural voice. Everything runs on your
 calls to Claude (and the free weather/voice lookups).
 
 ```
-                          ┌─────────────────────── your PC ──────────────────────┐
-  🎤 mic                  │                                                        │
-   │                      │   vad.py            server.py            brain.py       │
-   ▼                      │  ┌───────┐   speech ┌──────────┐  text  ┌──────────┐    │
- sounddevice ── frames ──►│  │Silero │ ──────► │ faster-  │ ────► │  Claude  │    │
-                          │  │  VAD  │          │ whisper  │        │ tool loop│    │
-                          │  └───────┘          │  (STT)   │        └────┬─────┘    │
-                          │                     └──────────┘             │ tools    │
-                          │   reply text                                 ▼          │
-  🔊 speaker ◄── edge-tts │ ◄──────────────────────────── tools.py + ...  │
-                          │                                         (open apps,     │
-                          │   ┌──────────────┐   WebSocket /ws      vision, memory, │
-   🖥️ HUD window ◄────────┼──►│ FastAPI app  │◄───────────────  tasks, web…    │
-   (static/index.html     │   │ (server.py)  │   HTTP /api/*                        │
-    in WebView2)          │   └──────────────┘                                      │
-                          └────────────────────────────────────────────┘
+   you speak                                                  Nova replies (voice)
+       |                                                                ^
+       v                                                                |
+  [microphone] --> Silero VAD --> faster-whisper --> Claude --------> edge-tts
+                   (vad.py)       (local STT)        (brain.py +      (neural TTS,
+                                                      tools.py)        SAPI fallback)
+                                                          |
+                                                          v
+                          open apps / files / URLs, run commands, vision,
+                          memory, tasks, web search, calendar, YouTube,
+                          email, Telegram / Discord, Shopify ...
+
+  The glowing HUD (static/index.html, in a WebView2 window) talks to the FastAPI
+  server (server.py) over a WebSocket (/ws) plus a few JSON routes (/api/*). The
+  server owns the microphone, the AI loop, and the phone-access gate.
 ```
 
 ## Entry points
@@ -65,10 +64,10 @@ Typed input (the "Type to Nova" bar) takes the same path from step 6, skipping m
 
 - Build the system prompt fresh each turn (date/time + long-term memory injected).
 - Call the model. Then branch on `stop_reason`:
-  - **`tool_use`** → run each requested tool via `tools.dispatch(...)`, append the results as a
+  - **`tool_use`** -> run each requested tool via `tools.dispatch(...)`, append the results as a
     `tool_result`, and loop again.
-  - **`pause_turn`** → a server-side tool (web search) paused; re-send to continue (capped).
-  - **`end_turn`** → return the spoken text.
+  - **`pause_turn`** -> a server-side tool (web search) paused; re-send to continue (capped).
+  - **`end_turn`** -> return the spoken text.
 - **Resilience:** history is trimmed to a bounded window, old screenshots are pruned so images
   aren't re-uploaded every turn, and orphaned `tool_use`/`tool_result` blocks are sanitized so a
   single broken turn can't wedge every future request. Out-of-credit errors return a friendly
@@ -95,19 +94,19 @@ code. `run_powershell` and outbound posts (Telegram/Discord/email) are routed th
 `static/index.html` is pure HTML + CSS + canvas (no CDN, no framework). It connects to `/ws`
 and renders state in real time.
 
-**Server → HUD messages:** `state` (idle/listening/thinking/speaking/enroll), `you` / `nova`
+**Server -> HUD messages:** `state` (idle/listening/thinking/speaking/enroll), `you` / `nova`
 (transcript lines), `level` (mic level for the orb), `mode` (always-listening on/off),
 `voiceid` (enrolled?), `enroll` (training progress), `confirm` (the Allow/Deny prompt for a
 shell command), `view` (switch dashboard/hologram), `activity` (which tool is running), `error`.
 
-**HUD → server commands:** `talk`, `text`, `mode`, `enroll`, `confirm`.
+**HUD -> server commands:** `talk`, `text`, `mode`, `enroll`, `confirm`.
 
 HTTP routes serve the page and JSON for the dashboard: `/api/dashboard`, `/api/system`,
 `/api/tasks/{action}`.
 
 ## Concurrency model
 
-- **Engine thread** — the mic → STT → Claude → TTS loop (blocking work, off the event loop).
+- **Engine thread** — the mic -> STT -> Claude -> TTS loop (blocking work, off the event loop).
 - **VAD thread** — runs Silero on incoming audio so the real-time audio callback stays light.
 - **asyncio tasks** in the FastAPI app: `_drain` (pumps the thread-safe `outbox` queue out to
   WebSocket clients), `_levels` (mic level for the orb), `_watchdog` (quits the hidden server
