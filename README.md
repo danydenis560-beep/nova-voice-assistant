@@ -13,10 +13,7 @@ desktop window.
 > No cloud account except your own Claude API key. Speech recognition runs **locally** on
 > your PC. The voice is **free**. Everything optional is off until you switch it on.
 
-<!-- 📸 Add a screenshot or short demo GIF here — it massively boosts credibility.
-     Capture the Nova window, save it as docs/screenshot.png, and uncomment:
-![Nova in action](docs/screenshot.png)
--->
+![Nova — your glowing desktop AI assistant](screenshot.png)
 
 ## ✨ Features
 
